@@ -5,6 +5,9 @@ node_modules/
 dist/
 coverage/
 
+# Local development database files (npm run db)
+.data/
+
 # Environment files: only the examples are committed
 .env
 .env.*

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { healthyBody, jsonResponse } from '../test/responses.js';
+import { healthyBody, jsonResponse } from '../test/helpers.jsx';
 import { fetchHealth } from './health.js';
 
 describe('fetchHealth', () => {

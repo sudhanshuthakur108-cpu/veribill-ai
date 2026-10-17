@@ -3,12 +3,14 @@ import { once } from 'node:events';
 import { after, before, describe, it } from 'node:test';
 import packageJson from '../package.json' with { type: 'json' };
 import { createApp } from '../src/app.js';
+import { loadConfig } from '../src/config.js';
 
 let server;
 let baseUrl;
 
+// No database is connected here: the health check must keep working without one.
 before(async () => {
-  server = createApp().listen(0, '127.0.0.1');
+  server = createApp(loadConfig({})).listen(0, '127.0.0.1');
   await once(server, 'listening');
   baseUrl = `http://127.0.0.1:${server.address().port}`;
 });

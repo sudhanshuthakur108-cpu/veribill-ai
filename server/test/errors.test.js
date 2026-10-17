@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { HttpError } from '../src/httpError.js';
 import { errorHandler } from '../src/middleware/errors.js';
 
 function createResponse() {
@@ -27,6 +28,25 @@ describe('errorHandler', () => {
 
     assert.equal(res.statusCode, 400);
     assert.deepEqual(res.body, { error: { message: 'Invoice number is required' } });
+  });
+
+  it('includes field errors for client errors', () => {
+    const res = createResponse();
+
+    errorHandler(new HttpError(400, 'Please correct the highlighted fields.', { email: 'Enter your email address.' }), {}, res, () => {});
+
+    assert.deepEqual(res.body, {
+      error: { message: 'Please correct the highlighted fields.', fields: { email: 'Enter your email address.' } },
+    });
+  });
+
+  it('never includes field details on server errors', (t) => {
+    t.mock.method(console, 'error', () => {});
+    const res = createResponse();
+
+    errorHandler(new HttpError(500, 'boom', { secret: 'internal' }), {}, res, () => {});
+
+    assert.deepEqual(res.body, { error: { message: 'Internal server error' } });
   });
 
   it('hides internal details on server errors', (t) => {

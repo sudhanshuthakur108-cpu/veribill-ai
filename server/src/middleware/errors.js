@@ -15,9 +15,12 @@ export function errorHandler(err, req, res, next) {
   // Server errors can carry internal details, so the client only gets a generic message.
   if (status >= 500) {
     console.error(err);
+    return res.status(status).json({ error: { message: 'Internal server error' } });
   }
 
-  res.status(status).json({
-    error: { message: status >= 500 ? 'Internal server error' : err.message },
-  });
+  const error = { message: err.message };
+  if (err.fields) {
+    error.fields = err.fields;
+  }
+  res.status(status).json({ error });
 }
