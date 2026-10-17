@@ -7,6 +7,18 @@ export class ApiError extends Error {
   }
 }
 
+// Adds the non-empty params to a path as a query string.
+export function withQuery(path, params) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, String(value));
+    }
+  }
+  const text = query.toString();
+  return text ? `${path}?${text}` : path;
+}
+
 // Same-origin fetches send the HttpOnly session cookie automatically; the browser
 // code never sees it.
 export async function apiRequest(path, { method = 'GET', body, csrfToken, signal } = {}) {

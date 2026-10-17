@@ -121,17 +121,88 @@ ignored and cannot be used to dodge the limit.
 - Passwords are not checked against breached-password lists.
 - The cookie design assumes the client and API are served from the same origin.
 
+## Document records
+
+Purchase orders and supplier invoices are stored as metadata the user types in: numbers, supplier, dates,
+currency, status and notes. There are no amounts, files or matching results yet.
+
+### Models
+
+`PurchaseOrder` and `Invoice` (in `server/src/models/`) both store `createdBy` (the owning user, immutable)
+and Mongoose timestamps. A `pre('validate')` hook derives lowercase lookup keys (`poNumberKey`,
+`invoiceNumberKey`, `supplierKey`) from the displayed values with `lookupKey()` in
+`src/documents/normalize.js`, so keys and values cannot drift apart.
+
+The keys ignore case and runs of whitespace but keep punctuation and legal suffixes. Merging "ABC Traders"
+with "ABC Traders Pvt Ltd", or "PO-1" with "PO1", could wrongly treat two different suppliers or documents
+as one.
+
+| Index | Purpose |
+| --- | --- |
+| `{ createdBy, poNumberKey }`, unique | A buyer issues each PO number once |
+| `{ createdBy, supplierKey, invoiceNumberKey }`, unique | Invoice numbers are unique per supplier, since two suppliers can both send "INV-001" |
+| `{ createdBy, createdAt: -1, _id: -1 }` | Default listing order |
+| `{ createdBy, status, createdAt: -1, _id: -1 }` | Status filter with the same order |
+
+`connectDatabase()` waits for these indexes before the API starts. Duplicate detection relies on the unique
+indexes (a `11000` error becomes `409`), so it also holds when two requests race.
+
+### Request handling
+
+`src/routes/purchaseOrders.js` and `src/routes/invoices.js` apply `requireAuth` and `noStore` to every route,
+and `requireCsrfToken` to `POST`. The shared pieces live in `src/documents/`:
+
+- `validation.js` reads only the accepted fields from the body and rejects non-string values, so objects
+  such as `{ "$ne": null }` never reach a query. `createdBy` always comes from the session.
+  - Document numbers and supplier names go through `cleanText` (NFKC, trim, collapse whitespace). Notes are
+    only trimmed, so their line breaks survive.
+  - Dates are parsed strictly, and currencies are checked against `Intl.supportedValuesOf('currency')`.
+  - Supplier names are rejected if they contain control characters or text-direction embedding, override or
+    isolate controls (U+202A–U+202E, U+2066–U+2069), or consist only of format characters (`\p{Cf}`) and
+    whitespace. Format characters inside a real name, such as the ZWJ/ZWNJ that shape many Indic scripts,
+    are kept.
+- `queries.js` parses list parameters, rejecting repeated values, out-of-range numbers and unknown statuses
+  or sorts. Express 5's default query parser does not build nested objects, so `?status[$ne]=x` arrives as an
+  unrelated key and is ignored.
+  - Search text is cleaned like supplier names, then rejected with `400` if it still contains control
+    characters. The MongoDB driver refuses a NUL byte in a regular expression, so without this check it
+    caused a `500`.
+  - Search escapes regular-expression characters and matches a literal substring of the lookup keys.
+  - Every query is filtered by `createdBy`, limited to 100 results and capped at 5 seconds with `maxTimeMS`.
+  - Detail lookups check the id format first (`400` when malformed), then query by id **and** owner, so
+    another user's record gets the same `404` as a missing one.
+
+New invoices may only be `draft` or `pending_review`. The other statuses describe matching and approval
+outcomes, and allowing them by hand would show results that no process has produced.
+
+### Known limits
+
+- Search is an unanchored regular expression, so it scans the user's records rather than using an index.
+  That is fine at portfolio scale; full-text or prefix search would be needed for large datasets.
+- Offset pagination is capped at page 10,000. Very deep pages would need cursor-based pagination.
+- Records cannot be edited or deleted yet, and there is no audit history.
+- Creating records is not rate limited.
+
 ## Client
 
 - `src/api/` holds functions that call the backend and translate HTTP failures into readable errors
   (`ApiError` carries the status and any field errors). Components never call `fetch` directly.
 - `src/auth/AuthProvider.jsx` asks `/api/auth/me` who is signed in when the app loads and exposes
-  `signIn`, `signUp`, `signOut` and `retry` through `useAuth()`. It mirrors the server's answer; nothing
-  about the session is stored in `localStorage` or `sessionStorage`.
+  `signIn`, `signUp`, `signOut`, `retry` and `sessionExpired` through `useAuth()`. It mirrors the server's
+  answer; nothing about the session is stored in `localStorage` or `sessionStorage`.
 - Routing uses React Router. `RequireAuth` wraps pages that need a session (redirecting to `/login` and
   remembering the requested path); `RequireGuest` wraps the sign-in and registration pages. A failed session
   check shows a retry state instead of pretending the user is signed out.
-- `src/hooks/` holds stateful logic (currently `useApiHealth`), keeping components presentational.
+- `src/hooks/` holds stateful logic, keeping components presentational:
+  - `useApiResource(load)` runs a memoized loader, aborts outdated requests, ignores responses for anything
+    but the latest request, exposes `loading`/`error`/`ready` plus `retry`, and calls `sessionExpired()` on a
+    `401` so the route guard sends the user back to sign in.
+  - `useForm` handles values, client checks, server field errors and pending state. A ref blocks a second
+    submission before React has re-rendered the disabled button.
+  - `useApiHealth` checks the API's health endpoint.
+- Record lists keep `page`, `search` and `status` in the URL (`src/documents/useListParams.js`). Values the
+  API would reject are ignored, so a hand-edited URL shows a normal list instead of an error. `ListResults`
+  renders the loading, error, empty, no-match and past-the-end states the same way for both document types.
 - Styling is plain CSS with custom properties defined in `src/index.css`; light and dark themes follow the
   operating system preference.
 - Anything not built yet is labelled as planned in the UI. There are no buttons or links that pretend to work.
@@ -158,7 +229,7 @@ These follow from the product goal and apply to all future work.
 | Area                  | Likely location                                    |
 | --------------------- | -------------------------------------------------- |
 | Roles (reviewer etc.) | `server/src/middleware/auth.js`, `User.role`       |
-| Document upload/parse | `server/src/documents/`                            |
+| Document upload/parse | `server/src/documents/` alongside the record logic |
 | Reconciliation rules  | `server/src/reconciliation/` (pure functions)      |
 | Review queue          | `server/src/routes/reviews.js` + client views      |
 

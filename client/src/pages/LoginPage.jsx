@@ -1,14 +1,14 @@
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthContext.js';
-import { useAuthForm } from '../auth/useAuthForm.js';
 import { validateLogin } from '../auth/validation.js';
 import AuthLayout from '../components/AuthLayout.jsx';
 import FormField from '../components/FormField.jsx';
+import { useForm } from '../hooks/useForm.js';
 
 export default function LoginPage() {
   const { signIn } = useAuth();
   const location = useLocation();
-  const { values, fieldErrors, formError, submitting, handleChange, handleSubmit } = useAuthForm(
+  const { values, fieldErrors, formError, submitting, handleChange, handleSubmit } = useForm(
     { email: '', password: '' },
     validateLogin,
     signIn,

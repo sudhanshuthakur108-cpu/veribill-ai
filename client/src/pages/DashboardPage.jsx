@@ -1,4 +1,4 @@
-import { useOutletContext } from 'react-router';
+import { Link, useOutletContext } from 'react-router';
 import SystemStatusPanel from '../components/SystemStatusPanel.jsx';
 import WorkflowOverview from '../components/WorkflowOverview.jsx';
 
@@ -27,9 +27,17 @@ export default function DashboardPage() {
         <h1>Match supplier invoices to purchase orders, with evidence for every finding.</h1>
         <p className="lead">
           VeriBill AI will extract invoice data, compare it line by line with purchase orders, flag likely
-          duplicates and send uncertain cases to a reviewer. This build lays the foundation; document processing
-          is not available yet.
+          duplicates and send uncertain cases to a reviewer. Today you can record purchase orders and supplier
+          invoices; document upload, extraction and matching are not available yet.
         </p>
+        <div className="intro-actions">
+          <Link className="button button-primary" to="/purchase-orders">
+            Purchase orders
+          </Link>
+          <Link className="button button-quiet" to="/invoices">
+            Invoices
+          </Link>
+        </div>
       </section>
 
       <div className="dashboard-grid">

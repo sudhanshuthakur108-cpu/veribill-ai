@@ -38,8 +38,19 @@ describe('connectDatabase', () => {
       const userIndexes = await mongoose.connection.collection('users').indexes();
       const sessionIndexes = await mongoose.connection.collection('sessions').indexes();
 
+      const orderIndexes = await mongoose.connection.collection('purchaseorders').indexes();
+      const invoiceIndexes = await mongoose.connection.collection('invoices').indexes();
+
       assert.ok(userIndexes.some((index) => index.key.email === 1 && index.unique));
       assert.ok(sessionIndexes.some((index) => index.key.expiresAt === 1 && index.expireAfterSeconds === 0));
+      assert.ok(
+        orderIndexes.some((index) => index.unique && Object.keys(index.key).join() === 'createdBy,poNumberKey'),
+      );
+      assert.ok(
+        invoiceIndexes.some(
+          (index) => index.unique && Object.keys(index.key).join() === 'createdBy,supplierKey,invoiceNumberKey',
+        ),
+      );
     } finally {
       await disconnectDatabase();
     }

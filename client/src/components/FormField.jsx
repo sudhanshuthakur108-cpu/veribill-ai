@@ -1,6 +1,8 @@
 import { useId } from 'react';
 
-export default function FormField({ label, error, hint, ...inputProps }) {
+// Renders an <input> by default; pass as="select" (with <option> children) or
+// as="textarea" for other controls.
+export default function FormField({ label, error, hint, as: Control = 'input', children, ...controlProps }) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -9,7 +11,9 @@ export default function FormField({ label, error, hint, ...inputProps }) {
   return (
     <div className="form-field">
       <label htmlFor={id}>{label}</label>
-      <input id={id} aria-invalid={error ? true : undefined} aria-describedby={describedBy} {...inputProps} />
+      <Control id={id} aria-invalid={error ? true : undefined} aria-describedby={describedBy} {...controlProps}>
+        {children}
+      </Control>
       {hint && (
         <p id={hintId} className="field-hint">
           {hint}

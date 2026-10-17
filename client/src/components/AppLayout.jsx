@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 import { useAuth } from '../auth/AuthContext.js';
 import { useApiHealth } from '../hooks/useApiHealth.js';
 import ApiStatusBadge from './ApiStatusBadge.jsx';
@@ -26,6 +26,13 @@ export default function AppLayout() {
     <div className="app">
       <header className="app-header">
         <Brand />
+        <nav className="main-nav" aria-label="Main">
+          <NavLink to="/" end>
+            Dashboard
+          </NavLink>
+          <NavLink to="/purchase-orders">Purchase orders</NavLink>
+          <NavLink to="/invoices">Invoices</NavLink>
+        </nav>
         <div className="header-actions">
           <ApiStatusBadge status={apiHealth.status} />
           <span className="user-name" title={user.email}>

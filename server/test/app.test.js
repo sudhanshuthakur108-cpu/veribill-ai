@@ -48,10 +48,10 @@ describe('GET /api/health', () => {
 
 describe('unknown routes', () => {
   it('respond with a JSON 404', async () => {
-    const response = await fetch(`${baseUrl}/api/invoices`);
+    const response = await fetch(`${baseUrl}/api/reconciliations`);
     const body = await response.json();
 
     assert.equal(response.status, 404);
-    assert.equal(body.error.message, 'Route not found: GET /api/invoices');
+    assert.equal(body.error.message, 'Route not found: GET /api/reconciliations');
   });
 });

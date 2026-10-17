@@ -52,9 +52,13 @@ export default function AuthProvider({ children }) {
     setState(SIGNED_OUT);
   }, [csrfToken]);
 
+  // Called when the API answers 401 to a signed-in request: the server-side session
+  // has expired or been revoked, so the route guard should send the user to sign in.
+  const sessionExpired = useCallback(() => setState(SIGNED_OUT), []);
+
   const value = useMemo(
-    () => ({ ...state, retry, signIn, signUp, signOut }),
-    [state, retry, signIn, signUp, signOut],
+    () => ({ ...state, retry, signIn, signUp, signOut, sessionExpired }),
+    [state, retry, signIn, signUp, signOut, sessionExpired],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

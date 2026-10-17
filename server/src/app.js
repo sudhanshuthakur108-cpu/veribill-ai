@@ -5,6 +5,8 @@ import { errorHandler, notFound } from './middleware/errors.js';
 import { verifyOrigin } from './middleware/verifyOrigin.js';
 import { createAuthRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
+import { invoicesRouter } from './routes/invoices.js';
+import { purchaseOrdersRouter } from './routes/purchaseOrders.js';
 
 export function createApp(config) {
   const app = express();
@@ -20,6 +22,8 @@ export function createApp(config) {
 
   app.use('/api', loadSession);
   app.use('/api/auth', createAuthRouter(config));
+  app.use('/api/purchase-orders', purchaseOrdersRouter);
+  app.use('/api/invoices', invoicesRouter);
 
   app.use(notFound);
   app.use(errorHandler);
