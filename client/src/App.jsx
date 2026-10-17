@@ -1,0 +1,70 @@
+import ApiStatusBadge from './components/ApiStatusBadge.jsx';
+import SystemStatusPanel from './components/SystemStatusPanel.jsx';
+import WorkflowOverview from './components/WorkflowOverview.jsx';
+import { useApiHealth } from './hooks/useApiHealth.js';
+import './App.css';
+
+const PRINCIPLES = [
+  {
+    title: 'Deterministic calculations',
+    description: 'Totals, variances and tolerances come from tested code, not from a language model.',
+  },
+  {
+    title: 'No invented values',
+    description: 'Missing or unreadable data stays empty and is flagged for review.',
+  },
+  {
+    title: 'People make the call',
+    description: 'Uncertain matches go to a reviewer. Nothing is approved without supporting evidence.',
+  },
+];
+
+export default function App() {
+  const apiHealth = useApiHealth();
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <img className="brand-mark" src="/favicon.svg" alt="" width="28" height="28" />
+          <span className="brand-name">VeriBill AI</span>
+        </div>
+        <ApiStatusBadge status={apiHealth.status} />
+      </header>
+
+      <main className="app-main">
+        <section className="intro">
+          <p className="eyebrow">Invoice reconciliation</p>
+          <h1>Match supplier invoices to purchase orders, with evidence for every finding.</h1>
+          <p className="lead">
+            VeriBill AI will extract invoice data, compare it line by line with purchase orders, flag likely
+            duplicates and send uncertain cases to a reviewer. This build lays the foundation; document processing
+            is not available yet.
+          </p>
+        </section>
+
+        <div className="dashboard-grid">
+          <WorkflowOverview />
+
+          <div className="side-column">
+            <SystemStatusPanel {...apiHealth} />
+
+            <section className="card" aria-labelledby="principles-title">
+              <h2 id="principles-title">Design principles</h2>
+              <ul className="principles">
+                {PRINCIPLES.map((principle) => (
+                  <li key={principle.title}>
+                    <h3>{principle.title}</h3>
+                    <p>{principle.description}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer className="app-footer">VeriBill AI · foundation build</footer>
+    </div>
+  );
+}
